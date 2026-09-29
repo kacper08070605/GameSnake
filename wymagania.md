@@ -15,12 +15,12 @@ przez GitHub Pages.
 
 ## 2. Zakres
 
-**W zakresie (wersja 1):** ruch węża, jedzenie, punktacja, kolizje ze ścianą i ogonem,
+**W zakresie (wersja 1):** ruch węża, jedzenie, punktacja, przechodzenie przez ściany, kolizja z ogonem,
 przyspieszanie, rekord w `localStorage`, ekran startowy i ekran końca gry, testy logiki,
 publikacja na GitHub Pages.
 
 **Poza zakresem:** pauza, dźwięki, sterowanie dotykowe / wersja mobilna, poziomy trudności,
-przechodzenie przez ściany, tabela wyników online, przeszkody na planszy.
+tabela wyników online, przeszkody na planszy.
 
 ## 3. Zasady gry
 
@@ -34,7 +34,8 @@ przechodzenie przez ściany, tabela wyników online, przeszkody na planszy.
 | Prędkość startowa | 1 ruch co 150 ms |
 | Przyspieszanie | co 5 zjedzonych owoców interwał krótszy o 10 ms |
 | Prędkość maksymalna | 1 ruch co 60 ms (dalej już nie przyspiesza) |
-| Koniec gry | głowa wjeżdża w krawędź planszy **lub** we własne ciało |
+| Ściany | uderzenie w krawędź planszy **nie** kończy gry — wąż pojawia się po przeciwnej stronie planszy |
+| Koniec gry | głowa wjeżdża we własne ciało |
 | Wygrana | wąż zajmuje całą planszę (brak wolnego pola na owoc) → koniec gry z komunikatem „Wygrana!” |
 
 **Szczegóły ruchu**
@@ -44,6 +45,9 @@ przechodzenie przez ściany, tabela wyników online, przeszkody na planszy.
   w tym samym ticku jest buforowane i stosowane w następnym (zapobiega „zawracaniu w siebie”
   przy szybkim wciśnięciu dwóch strzałek).
 - Ruch na pole, z którego w tym samym ticku schodzi ogon, **nie** jest kolizją.
+- Przejście przez ścianę: wyjście za prawą krawędź przenosi głowę na pierwsze pole z lewej
+  w tym samym wierszu (i analogicznie dla lewej, górnej i dolnej krawędzi). Wąż nie traci
+  przy tym punktów ani długości. Kolizja z własnym ciałem po drugiej stronie planszy kończy grę.
 
 ## 4. Sterowanie
 
@@ -100,7 +104,7 @@ jako parametr (funkcja `random`), dzięki czemu testy są deterministyczne.
 - `createGame(options)` → stan początkowy `{ snake, direction, food, score, status, speedMs }`
   (`options`: rozmiar planszy, funkcja `random`).
 - `changeDirection(state, dir)` → nowy stan z zabuforowanym kierunkiem (ignoruje zawrócenie o 180°).
-- `step(state)` → nowy stan po jednym ticku (ruch, jedzenie, wzrost, kolizja, przyspieszenie, koniec gry).
+- `step(state)` → nowy stan po jednym ticku (ruch z przejściem przez ściany, jedzenie, wzrost, kolizja z ciałem, przyspieszenie, koniec gry).
 - Funkcje zwracają **nowy** obiekt stanu, nie modyfikują przekazanego.
 
 **Pętla gry (`main.js`):** `setTimeout` z aktualnym `state.speedMs`; każdy tick wywołuje
@@ -114,7 +118,7 @@ Wymagane przypadki testowe dla `game.js`:
 1. Stan początkowy: wąż ma 3 segmenty, kierunek w prawo, wynik 0, owoc nie leży na wężu.
 2. `step` przesuwa węża o jedno pole w bieżącym kierunku, długość bez zmian.
 3. Zjedzenie owocu: wynik +1, długość +1, nowy owoc w wolnym polu.
-4. Uderzenie w każdą z czterech ścian kończy grę.
+4. Wyjście za każdą z czterech ścian nie kończy gry — głowa pojawia się po przeciwnej stronie planszy.
 5. Wjechanie we własne ciało kończy grę.
 6. Wjazd na pole zwalniane w tym samym ticku przez ogon nie kończy gry.
 7. Zmiana kierunku o 180° jest ignorowana.
