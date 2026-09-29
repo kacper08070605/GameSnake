@@ -1,0 +1,6 @@
+{
+  "name": "snake",
+  "private": true,
+  "type": "module",
+  "description": "Tylko po to, by Node traktował pliki .js jako moduły ES (node --test). Brak zależności."
+}
