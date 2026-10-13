@@ -24,6 +24,19 @@ export async function initCloud() {
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let { data: { session } } = await supabase.auth.getSession();
+
+    // Sesja zapisana w przeglądarce może należeć do gracza, którego już nie ma w bazie
+    // (np. usuniętego przez administratora) — wtedy każdy zapis kończy się błędem.
+    // Sprawdzamy ją na serwerze i w razie potrzeby zaczynamy od nowego gościa.
+    if (session) {
+      const { error } = await supabase.auth.getUser();
+      if (error && error.status >= 400 && error.status < 500) {
+        console.warn('Zapisana sesja jest nieważna — zakładam nowego gościa:', error.message);
+        await supabase.auth.signOut({ scope: 'local' });
+        session = null;
+      }
+    }
+
     if (!session) {
       const { data, error } = await supabase.auth.signInAnonymously();
       if (error) throw error;
