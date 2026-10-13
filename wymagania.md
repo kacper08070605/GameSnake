@@ -19,8 +19,11 @@ przez GitHub Pages.
 przyspieszanie, rekord w `localStorage`, ekran startowy i ekran końca gry, testy logiki,
 publikacja na GitHub Pages.
 
-**Poza zakresem:** pauza, dźwięki, sterowanie dotykowe / wersja mobilna, poziomy trudności,
-tabela wyników online, przeszkody na planszy.
+**W zakresie (wersja 2):** pauza, zapis przerwanej gry w Supabase i jej wznawianie,
+publiczna tabela 10 najlepszych wyników (gracze anonimowi, nick podawany przy wejściu do top 10).
+
+**Poza zakresem:** dźwięki, sterowanie dotykowe / wersja mobilna, poziomy trudności,
+przeszkody na planszy, konta użytkowników, ochrona tabeli przed celowo sfałszowanymi wynikami.
 
 ## 3. Zasady gry
 
@@ -54,13 +57,15 @@ tabela wyników online, przeszkody na planszy.
 | Klawisz | Działanie |
 |---|---|
 | Strzałki ↑ ↓ ← → | zmiana kierunku; na ekranie startowym — rozpoczęcie gry |
-| Enter | na ekranie końca gry — nowa gra |
+| Spacja / Esc | pauza (z zapisem gry w bazie) i wznowienie |
+| Enter | na ekranie końca gry lub w pauzie — nowa gra |
 
 Strzałki nie mogą przewijać strony podczas gry (`preventDefault`).
 
 ## 5. Ekrany i stany gry
 
-Gra ma trzy stany: `start` → `playing` → `over` → (Enter) → `playing`.
+Gra ma cztery stany: `start` → `playing` ⇄ `paused`, `playing` → `over` → (Enter) → `playing`.
+Zapisana gra jest odtwarzana przy wejściu na stronę od razu w stanie `paused`.
 
 - **Start:** plansza z wężem w pozycji początkowej, napis „Naciśnij strzałkę, aby zacząć”, widoczny rekord.
 - **Gra:** plansza, nad nią pasek z bieżącym wynikiem i rekordem.
@@ -81,6 +86,10 @@ tytuł „Snake” nad nią. Czcionka systemowa, bez zewnętrznych zasobów.
 
 Czysty JavaScript (moduły ES), Canvas 2D, **bez npm, bundlera i bibliotek**.
 
+**Wyjątek od zasady „bez bibliotek” (wersja 2):** `src/cloud.js` ładuje dynamicznie
+`@supabase/supabase-js` z CDN jsDelivr (wersja przypięta). Testy `node --test` dalej nie wymagają
+żadnych zależności. Schemat bazy: `supabase/schema.sql`; dane projektu: `src/config.js`.
+
 ```
 /
 ├── index.html        # strona: canvas, pasek wyniku, <script type="module" src="src/main.js">
@@ -89,10 +98,16 @@ Czysty JavaScript (moduły ES), Canvas 2D, **bez npm, bundlera i bibliotek**.
 │   ├── game.js       # CZYSTA logika gry — bez DOM, canvas, localStorage i bez bezpośredniego Math.random
 │   ├── render.js     # rysowanie stanu gry na canvas
 │   ├── input.js      # obsługa klawiatury → kierunki / akcje
-│   ├── storage.js    # odczyt/zapis rekordu (localStorage z obsługą błędów)
-│   └── main.js       # spina całość: pętla gry, stany, timer
+│   ├── storage.js    # odczyt/zapis rekordu i nicku (localStorage z obsługą błędów)
+│   ├── leaderboard.js # reguły tabeli wyników (top 10, poprawny nick)
+│   ├── config.js     # adres i klucz publiczny projektu Supabase
+│   ├── cloud.js      # komunikacja z Supabase (jedyny moduł, który ją zna)
+│   └── main.js       # spina całość: pętla gry, stany, timer, zapis i wyniki
 ├── tests/
-│   └── game.test.js  # testy logiki (node:test + node:assert)
+│   ├── game.test.js  # testy logiki (node:test + node:assert)
+│   └── leaderboard.test.js # testy reguł tabeli wyników
+├── supabase/
+│   └── schema.sql    # tabele i reguły Row Level Security
 ├── README.md         # opis, jak uruchomić lokalnie, jak testować, link do gry
 └── wymagania.md      # ten dokument
 ```
@@ -137,8 +152,8 @@ Rysowanie, klawiatura i `localStorage` sprawdzane ręcznie według listy:
 - **Lokalnie:** moduły ES nie ładują się z pliku otwartego dwuklikiem (`file://`),
   dlatego potrzebny jest prosty serwer, np. rozszerzenie *Live Server* w VS Code
   lub `python -m http.server 8000` i adres `http://localhost:8000`.
-- **GitHub:** publiczne repozytorium `snake`, gałąź `main`.
-- **GitHub Pages:** publikacja z gałęzi `main`, katalog główny (`/`) — bez kroku budowania.
+- **GitHub:** publiczne repozytorium `GameSnake`, gałąź `master`.
+- **GitHub Pages:** publikacja z gałęzi `master`, katalog główny (`/`) — bez kroku budowania.
   Link do gry umieszczony w `README.md`.
 
 ## 10. Wymagania jakościowe

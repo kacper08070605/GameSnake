@@ -9,10 +9,13 @@ const KEY_TO_DIRECTION = {
 
 /**
  * Nasłuchuje klawiatury i wywołuje odpowiednie funkcje.
- * @param {{ onDirection: (dir: string) => void, onEnter: () => void }} handlers
+ * @param {{ onDirection: (dir: string) => void, onEnter: () => void, onPause: () => void }} handlers
  */
-export function setupInput({ onDirection, onEnter }) {
+export function setupInput({ onDirection, onEnter, onPause }) {
   window.addEventListener('keydown', (event) => {
+    // Pisanie nicku w formularzu nie steruje grą.
+    if (event.target instanceof Element && event.target.closest('form')) return;
+
     const direction = KEY_TO_DIRECTION[event.key];
     if (direction) {
       event.preventDefault(); // strzałki nie mogą przewijać strony
@@ -20,6 +23,9 @@ export function setupInput({ onDirection, onEnter }) {
     } else if (event.key === 'Enter') {
       event.preventDefault();
       onEnter();
+    } else if (event.key === ' ' || event.key === 'Escape') {
+      event.preventDefault(); // spacja nie może przewijać strony
+      onPause();
     }
   });
 }

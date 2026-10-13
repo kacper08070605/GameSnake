@@ -9,11 +9,25 @@
 <body>
   <main class="game">
     <h1>Wąż bez Granic</h1>
-    <div class="score-bar">
-      <span>Wynik: <strong id="score">0</strong></span>
-      <span>Rekord: <strong id="high-score">0</strong></span>
+    <div class="layout">
+      <div class="board-column">
+        <div class="score-bar">
+          <span>Wynik: <strong id="score">0</strong></span>
+          <span>Rekord: <strong id="high-score">0</strong></span>
+        </div>
+        <canvas id="board" width="400" height="400"></canvas>
+        <form id="nickname-form" class="nickname-form" hidden>
+          <label for="nickname">Jesteś w top 10! Twój nick:</label>
+          <input id="nickname" name="nickname" maxlength="16" autocomplete="off">
+          <button type="submit">Zapisz</button>
+        </form>
+      </div>
+      <aside class="leaderboard">
+        <h2>Najlepsi</h2>
+        <ol id="top-scores"></ol>
+        <p id="cloud-status" class="cloud-status"></p>
+      </aside>
     </div>
-    <canvas id="board" width="400" height="400"></canvas>
   </main>
   <script type="module" src="src/main.js"></script>
 </body>

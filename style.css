@@ -39,3 +39,92 @@ canvas {
   border: 2px solid #2e9d3a;
   border-radius: 4px;
 }
+
+.layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.board-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.nickname-form {
+  width: 400px;
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.nickname-form[hidden] {
+  display: none;
+}
+
+.nickname-form label {
+  width: 100%;
+  color: #ffd54f;
+}
+
+.nickname-form input {
+  flex: 1;
+  padding: 6px 8px;
+  font: inherit;
+  color: #e8eaed;
+  background: #111418;
+  border: 1px solid #2e9d3a;
+  border-radius: 4px;
+}
+
+.nickname-form button {
+  padding: 6px 14px;
+  font: inherit;
+  color: #0b0d10;
+  background: #6ee06e;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.leaderboard {
+  width: 200px;
+  margin-top: 34px;
+}
+
+.leaderboard h2 {
+  margin: 0 0 8px;
+  font-size: 1.2rem;
+  color: #6ee06e;
+}
+
+.leaderboard ol {
+  margin: 0;
+  padding-left: 1.6em;
+  line-height: 1.6;
+}
+
+.leaderboard li {
+  overflow-wrap: anywhere;
+}
+
+.cloud-status {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  color: #9aa0a6;
+}
+
+@media (max-width: 700px) {
+  .layout {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .leaderboard {
+    width: 400px;
+    margin-top: 0;
+  }
+}

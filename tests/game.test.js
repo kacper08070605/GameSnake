@@ -1,7 +1,16 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createGame, startGame, changeDirection, step } from '../src/game.js';
+import {
+  createGame,
+  startGame,
+  changeDirection,
+  step,
+  pauseGame,
+  resumeGame,
+  serializeGame,
+  restoreGame,
+} from '../src/game.js';
 
 // Deterministyczne "losowanie": zawsze wybiera pierwsze wolne pole.
 const alwaysFirst = () => 0;
@@ -227,4 +236,88 @@ test('10. brak wolnego pola na owoc kończy grę wygraną', () => {
 test('step nic nie robi poza stanem playing', () => {
   const game = createGame({ width: 20, height: 20, random: alwaysFirst });
   assert.equal(step(game), game);
+});
+
+const BOARD = { width: 20, height: 20, random: alwaysFirst };
+
+test('11. pauza zatrzymuje grę, a wznowienie ją przywraca', () => {
+  const paused = pauseGame(playingGame());
+
+  assert.equal(paused.status, 'paused');
+  assert.equal(step(paused), paused);
+  assert.equal(resumeGame(paused).status, 'playing');
+});
+
+test('11b. pauza czyści bufor kierunków', () => {
+  const game = changeDirection(playingGame(), 'up');
+
+  assert.deepEqual(pauseGame(game).pendingDirections, []);
+});
+
+test('11c. pauza i wznowienie nic nie robią w niewłaściwych stanach', () => {
+  const start = createGame(BOARD);
+  const playing = playingGame();
+
+  assert.equal(pauseGame(start), start);
+  assert.equal(resumeGame(start), start);
+  assert.equal(resumeGame(playing), playing);
+});
+
+test('12. zapis i odtworzenie gry daje ten sam stan w pauzie', () => {
+  const game = playingGame({
+    snake: [
+      { x: 5, y: 5 },
+      { x: 4, y: 5 },
+      { x: 3, y: 5 },
+      { x: 2, y: 5 },
+    ],
+    direction: 'down',
+    food: { x: 10, y: 3 },
+    score: 1,
+  });
+
+  // Przez JSON, tak jak w bazie (kolumna jsonb).
+  const data = JSON.parse(JSON.stringify(serializeGame(game)));
+  const restored = restoreGame(data, BOARD);
+
+  assert.equal(restored.status, 'paused');
+  assert.deepEqual(restored.snake, game.snake);
+  assert.equal(restored.direction, 'down');
+  assert.deepEqual(restored.food, { x: 10, y: 3 });
+  assert.equal(restored.score, 1);
+  assert.equal(restored.speedMs, 150);
+  assert.deepEqual(restored.pendingDirections, []);
+  assert.equal(restored.won, false);
+});
+
+test('12b. odtworzona gra ma prędkość wynikającą z wyniku', () => {
+  // 13 segmentów = wynik 10 = dwa przyspieszenia.
+  const snake = Array.from({ length: 13 }, (_, i) => ({ x: 15 - i, y: 5 }));
+  const game = playingGame({ snake, food: { x: 0, y: 0 }, score: 10 });
+
+  const restored = restoreGame(serializeGame(game), BOARD);
+
+  assert.equal(restored.speedMs, 130);
+});
+
+test('13. restoreGame odrzuca uszkodzone dane', () => {
+  const valid = serializeGame(playingGame());
+  assert.notEqual(restoreGame(valid, BOARD), null);
+
+  const broken = [
+    ['brak danych', null],
+    ['inny rozmiar planszy', { ...valid, width: 30 }],
+    ['nieznany kierunek', { ...valid, direction: 'toString' }],
+    ['wąż poza planszą', { ...valid, snake: [{ x: 20, y: 0 }, ...valid.snake.slice(1)] }],
+    ['współrzędne niecałkowite', { ...valid, snake: [{ x: 1.5, y: 0 }, ...valid.snake.slice(1)] }],
+    ['powtórzony segment', { ...valid, snake: [valid.snake[0], valid.snake[0], valid.snake[2]] }],
+    ['owoc na wężu', { ...valid, food: valid.snake[1] }],
+    ['brak owocu', { ...valid, food: null }],
+    ['wynik niezgodny z długością', { ...valid, score: 50 }],
+    ['za krótki wąż', { ...valid, snake: valid.snake.slice(0, 2), score: -1 }],
+  ];
+
+  for (const [name, data] of broken) {
+    assert.equal(restoreGame(data, BOARD), null, name);
+  }
 });

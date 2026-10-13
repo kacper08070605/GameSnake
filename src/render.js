@@ -28,6 +28,14 @@ export function render(ctx, state, { highScore, isNewRecord }) {
     drawOverlay(ctx, [
       { text: 'Naciśnij strzałkę, aby zacząć', size: 20 },
       { text: `Rekord: ${highScore}`, size: 16 },
+      { text: 'Spacja — pauza w trakcie gry', size: 14 },
+    ]);
+  } else if (state.status === 'paused') {
+    drawOverlay(ctx, [
+      { text: 'Pauza', size: 32 },
+      { text: `Wynik: ${state.score}`, size: 18 },
+      { text: 'Spacja — wznów', size: 16 },
+      { text: 'Enter — nowa gra', size: 16 },
     ]);
   } else if (state.status === 'over') {
     const lines = [

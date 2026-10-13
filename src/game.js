@@ -56,7 +56,7 @@ export function createGame({ width = 20, height = 20, random }) {
     pendingDirections: [],
     food: placeFood(snake, width, height, random),
     score: 0,
-    status: 'start', // 'start' | 'playing' | 'over'
+    status: 'start', // 'start' | 'playing' | 'paused' | 'over'
     won: false,
     speedMs: START_SPEED_MS,
   };
@@ -66,6 +66,55 @@ export function createGame({ width = 20, height = 20, random }) {
 export function startGame(state) {
   if (state.status !== 'start') return state;
   return { ...state, status: 'playing' };
+}
+
+/** Wstrzymuje grę. Bufor kierunków jest czyszczony, żeby wąż nie skręcił sam po wznowieniu. */
+export function pauseGame(state) {
+  if (state.status !== 'playing') return state;
+  return { ...state, status: 'paused', pendingDirections: [] };
+}
+
+/** Wznawia wstrzymaną grę. */
+export function resumeGame(state) {
+  if (state.status !== 'paused') return state;
+  return { ...state, status: 'playing' };
+}
+
+/**
+ * Zwraca dane gry do zapisu jako JSON — bez funkcji random, bufora kierunków i statusu.
+ * Prędkości nie zapisujemy, bo wynika z wyniku.
+ */
+export function serializeGame(state) {
+  return {
+    width: state.width,
+    height: state.height,
+    snake: state.snake.map(({ x, y }) => ({ x, y })),
+    direction: state.direction,
+    food: state.food ? { x: state.food.x, y: state.food.y } : null,
+    score: state.score,
+  };
+}
+
+/**
+ * Odtwarza zapisaną grę w stanie 'paused'.
+ * Zwraca null, gdy dane są niepoprawne albo pochodzą z planszy o innym rozmiarze.
+ */
+export function restoreGame(data, { width = 20, height = 20, random }) {
+  if (!isValidSave(data, width, height)) return null;
+
+  return {
+    width,
+    height,
+    random,
+    snake: data.snake.map(({ x, y }) => ({ x, y })),
+    direction: data.direction,
+    pendingDirections: [],
+    food: { x: data.food.x, y: data.food.y },
+    score: data.score,
+    status: 'paused',
+    won: false,
+    speedMs: speedForScore(data.score),
+  };
 }
 
 /**
@@ -154,6 +203,38 @@ function placeFood(snake, width, height, random) {
 
   if (freeCells.length === 0) return null;
   return freeCells[Math.floor(random() * freeCells.length)];
+}
+
+// Dane z bazy mogą być uszkodzone albo zmienione ręcznie — sprawdzamy wszystko, czego używa gra.
+function isValidSave(data, width, height) {
+  if (data === null || typeof data !== 'object') return false;
+  if (data.width !== width || data.height !== height) return false;
+  if (typeof data.direction !== 'string' || !Object.hasOwn(DIRECTIONS, data.direction)) return false;
+
+  const { snake, food, score } = data;
+  if (!Array.isArray(snake) || snake.length < 3) return false;
+  if (!snake.every((cell) => isCellOnBoard(cell, width, height))) return false;
+  const uniqueCells = new Set(snake.map(({ x, y }) => `${x},${y}`));
+  if (uniqueCells.size !== snake.length) return false;
+
+  if (!isCellOnBoard(food, width, height)) return false;
+  if (snake.some((segment) => isSamePosition(segment, food))) return false;
+
+  // Wąż rośnie o jedno pole za każdy owoc, więc wynik musi zgadzać się z długością.
+  return score === snake.length - 3;
+}
+
+function isCellOnBoard(cell, width, height) {
+  return (
+    cell !== null &&
+    typeof cell === 'object' &&
+    Number.isInteger(cell.x) &&
+    Number.isInteger(cell.y) &&
+    cell.x >= 0 &&
+    cell.x < width &&
+    cell.y >= 0 &&
+    cell.y < height
+  );
 }
 
 function isSamePosition(a, b) {

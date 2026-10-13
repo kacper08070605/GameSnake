@@ -24,3 +24,22 @@ export function saveHighScore(score) {
     // localStorage niedostępny — rekord zostaje tylko w pamięci.
   }
 }
+
+// Nick do tabeli wyników — zapamiętany, żeby nie wpisywać go przy każdym rekordzie.
+const NICKNAME_KEY = 'snake.nickname';
+
+export function loadNickname() {
+  try {
+    return window.localStorage.getItem(NICKNAME_KEY) ?? '';
+  } catch {
+    return '';
+  }
+}
+
+export function saveNickname(nickname) {
+  try {
+    window.localStorage.setItem(NICKNAME_KEY, nickname);
+  } catch {
+    // localStorage niedostępny — nick nie zostanie zapamiętany.
+  }
+}

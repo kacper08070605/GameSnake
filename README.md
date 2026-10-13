@@ -1,19 +1,25 @@
 # Wąż bez Granic
 
-Klasyczna gra Snake w czystym JavaScripcie (moduły ES + Canvas 2D), bez npm, bundlera i bibliotek.
+Klasyczna gra Snake w czystym JavaScripcie (moduły ES + Canvas 2D), bez npm i bundlera.
+Wyniki i zapisane gry trzymane są w Supabase (biblioteka `supabase-js` ładowana z CDN).
 Projekt szkoleniowy — pełne wymagania w [wymagania.md](wymagania.md).
 
-**Zagraj:** https://&lt;uzytkownik&gt;.github.io/snake/ <!-- podmień na właściwy adres po włączeniu GitHub Pages -->
+**Zagraj:** https://kacper08070605.github.io/GameSnake/
 
 ## Sterowanie
 
 | Klawisz | Działanie |
 |---|---|
 | Strzałki ↑ ↓ ← → | zmiana kierunku; na ekranie startowym — start gry |
-| Enter | po końcu gry — nowa gra |
+| Spacja / Esc | pauza (z zapisem gry w bazie) i wznowienie |
+| Enter | po końcu gry lub w pauzie — nowa gra |
 
 Wąż przechodzi przez ściany na drugą stronę planszy. Gra kończy się, gdy głowa wjedzie we własne ciało.
 Co 5 zjedzonych owoców wąż przyspiesza. Rekord zapisywany jest w przeglądarce (`localStorage`).
+
+Wyniki trafiają do publicznej tabeli 10 najlepszych (Supabase). Przerwaną grę (Spacja / Esc albo
+zamknięcie karty) można wznowić po powrocie w tej samej przeglądarce. Bez połączenia z bazą gra działa
+normalnie, tylko bez tabeli i wznawiania.
 
 ## Uruchomienie lokalnie
 
@@ -35,16 +41,21 @@ Plik `package.json` zawiera tylko `"type": "module"`, żeby Node wczytywał plik
 ## Struktura
 
 ```
-index.html        strona: canvas i pasek wyniku
-style.css         wygląd strony
-src/game.js       czysta logika gry (bez DOM, canvas, localStorage i Math.random)
-src/render.js     rysowanie stanu gry na canvas
-src/input.js      obsługa klawiatury
-src/storage.js    odczyt/zapis rekordu
-src/main.js       pętla gry, stany, timer
-tests/game.test.js  testy logiki (node:test)
+index.html              strona: canvas, pasek wyniku, tabela najlepszych, formularz nicku
+style.css               wygląd strony
+src/game.js             czysta logika gry (bez DOM, canvas, localStorage i Math.random)
+src/leaderboard.js      reguły tabeli wyników (kto wchodzi do top 10, poprawny nick)
+src/render.js           rysowanie stanu gry na canvas
+src/input.js            obsługa klawiatury
+src/storage.js          odczyt/zapis rekordu i nicku
+src/config.js           adres i klucz publiczny projektu Supabase
+src/cloud.js            komunikacja z Supabase (logowanie anonimowe, zapis gry, wyniki)
+src/main.js             pętla gry, stany, timer, przepływ zapisu i wyników
+tests/game.test.js        testy logiki gry (node:test)
+tests/leaderboard.test.js testy reguł tabeli wyników
+supabase/schema.sql     tabele i reguły dostępu (Row Level Security) w bazie
 ```
 
 ## Publikacja (GitHub Pages)
 
-Settings → Pages → *Deploy from a branch* → gałąź `main`, katalog `/ (root)`. Krok budowania nie jest potrzebny.
+Settings → Pages → *Deploy from a branch* → gałąź `master`, katalog `/ (root)`. Krok budowania nie jest potrzebny.
