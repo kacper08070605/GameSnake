@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 110" width="640" height="110">
+  <defs>
+    <linearGradient id="fill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#c8ffb0"/>
+      <stop offset="0.45" stop-color="#6ee06e"/>
+      <stop offset="1" stop-color="#2e9d3a"/>
+    </linearGradient>
+    <pattern id="scales" width="12" height="10" patternUnits="userSpaceOnUse">
+      <path d="M0 10 Q6 2 12 10" fill="none" stroke="#1d6b26" stroke-width="1.4" opacity="0.45"/>
+    </pattern>
+    <filter id="glow" x="-10%" y="-40%" width="120%" height="180%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- zwinięty wąż jako znak przed napisem -->
+  <g filter="url(#glow)">
+    <path d="M58 82c-26 0-38-16-38-30s12-30 34-30 30 14 30 26-10 22-24 22-20-8-20-16 6-12 12-12"
+          fill="none" stroke="#1d6b26" stroke-width="17" stroke-linecap="round"/>
+    <path d="M58 82c-26 0-38-16-38-30s12-30 34-30 30 14 30 26-10 22-24 22-20-8-20-16 6-12 12-12"
+          fill="none" stroke="#6ee06e" stroke-width="11" stroke-linecap="round"/>
+    <path d="M58 82l16-2" stroke="#e53935" stroke-width="3" stroke-linecap="round"/>
+    <path d="M74 80l5-4M74 80l5 3" stroke="#e53935" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="52" cy="78" r="2.4" fill="#0b0d10"/>
+  </g>
+
+  <g font-family="'Segoe UI Black', 'Arial Black', system-ui, sans-serif" font-weight="900" font-size="64">
+    <text x="104" y="78" textLength="516" lengthAdjust="spacingAndGlyphs"
+          fill="url(#fill)" stroke="#0f3d16" stroke-width="5" paint-order="stroke" filter="url(#glow)">WĄŻ BEZ GRANIC</text>
+    <text x="104" y="78" textLength="516" lengthAdjust="spacingAndGlyphs" fill="url(#scales)">WĄŻ BEZ GRANIC</text>
+  </g>
+</svg>

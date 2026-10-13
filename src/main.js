@@ -10,7 +10,7 @@ import {
   serializeGame,
   restoreGame,
 } from './game.js';
-import { render } from './render.js';
+import { render, onImagesLoaded } from './render.js';
 import { setupInput } from './input.js';
 import { loadHighScore, saveHighScore, loadNickname, saveNickname } from './storage.js';
 import { qualifiesForTop, cleanNickname } from './leaderboard.js';
@@ -227,5 +227,6 @@ async function connectCloud() {
 }
 
 setupInput({ onDirection: handleDirection, onEnter: handleEnter, onPause: handlePause });
+onImagesLoaded(draw);
 draw();
 connectCloud();

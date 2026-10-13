@@ -13,6 +13,30 @@ const COLORS = {
   highlight: '#ffd54f',
 };
 
+// Grafiki SVG. Dopóki się nie wczytają (albo gdy się nie wczytają), rysujemy zwykłe kolory.
+const IMAGES = {
+  board: loadImage('assets/board-bg.svg'),
+  food: loadImage('assets/apple.svg'),
+  start: loadImage('assets/start.svg'),
+};
+
+function loadImage(src) {
+  const image = new Image();
+  image.src = src;
+  return image;
+}
+
+function isLoaded(image) {
+  return image.complete && image.naturalWidth > 0;
+}
+
+/** Wywołuje callback po wczytaniu każdej grafiki — żeby przerysować klatkę. */
+export function onImagesLoaded(callback) {
+  for (const image of Object.values(IMAGES)) {
+    image.addEventListener('load', callback);
+  }
+}
+
 /**
  * Rysuje całą klatkę gry.
  * @param {CanvasRenderingContext2D} ctx
@@ -25,11 +49,15 @@ export function render(ctx, state, { highScore, isNewRecord }) {
   drawSnake(ctx, state.snake);
 
   if (state.status === 'start') {
-    drawOverlay(ctx, [
-      { text: 'Naciśnij strzałkę, aby zacząć', size: 20 },
-      { text: `Rekord: ${highScore}`, size: 16 },
-      { text: 'Spacja — pauza w trakcie gry', size: 14 },
-    ]);
+    drawOverlay(
+      ctx,
+      [
+        { text: 'Naciśnij strzałkę, aby zacząć', size: 20 },
+        { text: `Rekord: ${highScore}`, size: 16 },
+        { text: 'Spacja — pauza w trakcie gry', size: 14 },
+      ],
+      IMAGES.start,
+    );
   } else if (state.status === 'paused') {
     drawOverlay(ctx, [
       { text: 'Pauza', size: 32 },
@@ -52,6 +80,9 @@ export function render(ctx, state, { highScore, isNewRecord }) {
 function drawBoard(ctx, width, height) {
   ctx.fillStyle = COLORS.background;
   ctx.fillRect(0, 0, width * CELL_SIZE, height * CELL_SIZE);
+  if (isLoaded(IMAGES.board)) {
+    ctx.drawImage(IMAGES.board, 0, 0, width * CELL_SIZE, height * CELL_SIZE);
+  }
 
   // Delikatna siatka pól.
   ctx.strokeStyle = COLORS.grid;
@@ -77,6 +108,11 @@ function drawSnake(ctx, snake) {
 }
 
 function drawFood(ctx, food) {
+  if (isLoaded(IMAGES.food)) {
+    ctx.drawImage(IMAGES.food, food.x * CELL_SIZE, food.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+    return;
+  }
+
   const radius = CELL_SIZE / 2 - 2;
   ctx.fillStyle = COLORS.food;
   ctx.beginPath();
@@ -94,11 +130,14 @@ function drawCell(ctx, { x, y }) {
   ctx.fillRect(x * CELL_SIZE + 1, y * CELL_SIZE + 1, CELL_SIZE - 2, CELL_SIZE - 2);
 }
 
-// Półprzezroczysta nakładka z wyśrodkowanymi liniami tekstu.
-function drawOverlay(ctx, lines) {
+// Półprzezroczysta nakładka z wyśrodkowanymi liniami tekstu (opcjonalnie z ilustracją pod tekstem).
+function drawOverlay(ctx, lines, illustration) {
   const { width, height } = ctx.canvas;
   ctx.fillStyle = COLORS.overlay;
   ctx.fillRect(0, 0, width, height);
+  if (illustration && isLoaded(illustration)) {
+    ctx.drawImage(illustration, 0, 0, width, height);
+  }
 
   const lineGap = 14;
   const totalHeight = lines.reduce((sum, line) => sum + line.size + lineGap, -lineGap);

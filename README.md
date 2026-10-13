@@ -54,6 +54,7 @@ src/main.js             pętla gry, stany, timer, przepływ zapisu i wyników
 tests/game.test.js        testy logiki gry (node:test)
 tests/leaderboard.test.js testy reguł tabeli wyników
 supabase/schema.sql     tabele i reguły dostępu (Row Level Security) w bazie
+assets/                 grafiki SVG: logo, tło strony i planszy, jabłko, ilustracja startowa
 ```
 
 ## Publikacja (GitHub Pages)

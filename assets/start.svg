@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <!-- Ilustracja ekranu startowego: górna i środkowa część pusta (tam gra rysuje napisy). -->
+  <defs>
+    <radialGradient id="fly">
+      <stop offset="0" stop-color="#d9ffb8"/>
+      <stop offset="0.35" stop-color="#9dff7a" stop-opacity="0.8"/>
+      <stop offset="1" stop-color="#6ee06e" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="skin" cx="38%" cy="38%" r="70%">
+      <stop offset="0" stop-color="#ff7a6b"/>
+      <stop offset="0.55" stop-color="#e53935"/>
+      <stop offset="1" stop-color="#a51616"/>
+    </radialGradient>
+    <path id="leaf" d="M0 0 C 22 -18 30 -62 0 -100 C -30 -62 -22 -18 0 0 Z"/>
+  </defs>
+
+  <!-- liście w dolnych rogach -->
+  <g fill="#16321f" stroke="#6ee06e" stroke-opacity="0.25" stroke-width="2">
+    <use href="#leaf" transform="translate(-6 410) rotate(48) scale(1.1)"/>
+    <use href="#leaf" transform="translate(20 412) rotate(18) scale(0.8)"/>
+    <use href="#leaf" transform="translate(406 410) rotate(-48) scale(1.1)"/>
+    <use href="#leaf" transform="translate(380 412) rotate(-16) scale(0.8)"/>
+  </g>
+
+  <!-- zwinięty wąż -->
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M70 372 C 110 392 190 392 220 370 C 252 346 230 312 196 316 C 160 320 150 350 182 356 C 214 362 240 340 250 318 C 258 316 262 310 268 304"
+          stroke="#0f3d16" stroke-width="30"/>
+    <path d="M70 372 C 110 392 190 392 220 370 C 252 346 230 312 196 316 C 160 320 150 350 182 356 C 214 362 240 340 250 318 C 258 316 262 310 268 304"
+          stroke="#2e9d3a" stroke-width="22"/>
+    <path d="M78 372 C 116 388 186 388 214 368" stroke="#6ee06e" stroke-width="4" opacity="0.5"/>
+  </g>
+  <!-- głowa patrząca w górę na jabłko -->
+  <g transform="translate(272 298) rotate(-38)">
+    <ellipse cx="0" cy="0" rx="22" ry="16" fill="#6ee06e" stroke="#0f3d16" stroke-width="4"/>
+    <circle cx="6" cy="-7" r="4" fill="#0b0d10"/>
+    <circle cx="6" cy="7" r="4" fill="#0b0d10"/>
+    <circle cx="7.5" cy="-8.5" r="1.3" fill="#ffffff"/>
+    <circle cx="7.5" cy="5.5" r="1.3" fill="#ffffff"/>
+    <path d="M22 0 h12 M34 0 l6 -4 M34 0 l6 4" stroke="#e53935" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <!-- jabłko -->
+  <g transform="translate(320 262) scale(0.75)">
+    <path d="M0 -12c-6-5-19-5-23 6-4 11 2 25 10 30 4 3 9 3 13 0 4 3 9 3 13 0 8-5 14-19 10-30-4-11-17-11-23-6z"
+          fill="url(#skin)" stroke="#5c0b0b" stroke-width="3"/>
+    <path d="M0 -12c0-5 1-9 4-13" stroke="#5a3a1a" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+    <path d="M4 -19c4-7 13-8 18-5-3 7-11 10-18 5z" fill="#6ee06e" stroke="#1d6b26" stroke-width="2.5"/>
+    <ellipse cx="-11" cy="-1" rx="4" ry="7" fill="#ffffff" opacity="0.6" transform="rotate(-20 -11 -1)"/>
+  </g>
+
+  <!-- świetliki -->
+  <g>
+    <circle cx="44" cy="292" r="7" fill="url(#fly)"/>
+    <circle cx="120" cy="272" r="5" fill="url(#fly)"/>
+    <circle cx="360" cy="300" r="6" fill="url(#fly)"/>
+    <circle cx="300" cy="380" r="5" fill="url(#fly)"/>
+    <circle cx="26" cy="350" r="4" fill="url(#fly)"/>
+  </g>
+</svg>
