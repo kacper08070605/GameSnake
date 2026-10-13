@@ -1,4 +1,4 @@
-# Snake
+# Wąż bez Granic
 
 Klasyczna gra Snake w czystym JavaScripcie (moduły ES + Canvas 2D), bez npm, bundlera i bibliotek.
 Projekt szkoleniowy — pełne wymagania w [wymagania.md](wymagania.md).
