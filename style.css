@@ -204,3 +204,20 @@ canvas {
     margin-top: 0;
   }
 }
+
+/* Warstwa świetlików: na całe okno, pod grą, nie przechwytuje kliknięć. */
+.fireflies {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  border: 0; /* nadpisuje ramkę planszy z reguły „canvas” */
+  border-radius: 0;
+}
+
+.game {
+  position: relative;
+  z-index: 1;
+}

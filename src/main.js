@@ -10,7 +10,16 @@ import {
   serializeGame,
   restoreGame,
 } from './game.js';
-import { render, onImagesLoaded } from './render.js';
+import { render, CELL_SIZE } from './render.js';
+import {
+  createEffects,
+  addEatEffect,
+  addFlash,
+  addShake,
+  addSparks,
+  pruneEffects,
+} from './effects.js';
+import { startFireflies } from './fireflies.js';
 import { setupInput } from './input.js';
 import { loadHighScore, saveHighScore, loadNickname, saveNickname } from './storage.js';
 import { qualifiesForTop, cleanNickname } from './leaderboard.js';
@@ -46,6 +55,11 @@ const cloudStatusElement = document.getElementById('cloud-status');
 const nicknameForm = document.getElementById('nickname-form');
 const nicknameInput = document.getElementById('nickname');
 
+// Animacje wyłączamy, gdy użytkownik ma w systemie ustawione „ogranicz ruch”.
+const motion = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+let foodAppearedAt = 0; // kiedy pojawił się obecny owoc (animacja „pop”)
+let effects = createEffects();
 let state = newGameState();
 let highScore = loadHighScore();
 let isNewRecord = false;
@@ -58,13 +72,22 @@ let finalScoreTask = Promise.resolve(); // trwająca obsługa wyniku ostatniej g
 let userGeneration = 0;
 
 function newGameState() {
+  foodAppearedAt = performance.now();
   return createGame({ width: BOARD_SIZE, height: BOARD_SIZE, random: Math.random });
 }
 
-function draw() {
+function draw(now = performance.now()) {
   scoreElement.textContent = state.score;
   highScoreElement.textContent = highScore;
-  render(ctx, state, { highScore, isNewRecord });
+  render(ctx, state, { highScore, isNewRecord, now, effects, foodAppearedAt, motion });
+}
+
+// Pętla animacji: rysuje ~60 klatek na sekundę. Ruch węża dalej wyznacza tick() na swoim zegarze,
+// więc tempo gry się nie zmienia. Przeglądarka wstrzymuje tę pętlę, gdy karta jest ukryta.
+function animate(now) {
+  effects = pruneEffects(effects, now);
+  draw(now);
+  requestAnimationFrame(animate);
 }
 
 function scheduleTick() {
@@ -77,13 +100,45 @@ function stopTimer() {
 }
 
 function tick() {
+  const before = state;
   state = step(state);
+  const now = performance.now();
+  if (state.score > before.score) celebrateEating(before, now);
+
   if (state.status === 'over') {
     finishGame();
+    reactToGameOver(now);
   } else {
     scheduleTick();
   }
-  draw();
+  draw(now);
+}
+
+// Iskry i „+1” w miejscu zjedzonego owocu; przy przyspieszeniu zielony błysk planszy.
+function celebrateEating(before, now) {
+  effects = addEatEffect(effects, cellCenter(before.food), now, Math.random);
+  foodAppearedAt = now;
+  if (state.speedMs < before.speedMs) effects = addFlash(effects, '#6ee06e', now);
+}
+
+// Przegrana: czerwony błysk i trzęsienie. Wygrana lub nowy rekord: złote iskry.
+function reactToGameOver(now) {
+  if (!state.won) {
+    effects = addFlash(effects, '#e53935', now);
+    if (motion) effects = addShake(effects, now);
+  }
+  if (state.won || isNewRecord) {
+    const center = { x: canvas.width / 2, y: canvas.height / 2 };
+    effects = addSparks(effects, center, now, Math.random, {
+      count: 28,
+      colors: ['#ffd54f', '#fff3c4', '#6ee06e'],
+      speed: 150,
+    });
+  }
+}
+
+function cellCenter(cell) {
+  return { x: cell.x * CELL_SIZE + CELL_SIZE / 2, y: cell.y * CELL_SIZE + CELL_SIZE / 2 };
 }
 
 function finishGame() {
@@ -341,6 +396,7 @@ async function loadUserData() {
   // Zapis odtwarzamy tylko, jeśli gracz w międzyczasie nie zaczął nowej gry.
   if (restored && state.status === 'start') {
     state = restored;
+    foodAppearedAt = performance.now();
     draw();
   }
 }
@@ -358,7 +414,20 @@ async function connectCloud() {
   await loadUserData();
 }
 
+// Ozdoby poza planszą: świetliki nad tłem i „oddychająca” poświata logo.
+function startDecorations() {
+  if (!motion) return;
+  startFireflies(document.getElementById('fireflies'));
+  document.querySelector('.logo').animate(
+    [
+      { filter: 'drop-shadow(0 0 2px rgba(110, 224, 110, 0.25))' },
+      { filter: 'drop-shadow(0 0 12px rgba(110, 224, 110, 0.7))' },
+    ],
+    { duration: 2600, iterations: Infinity, direction: 'alternate', easing: 'ease-in-out' },
+  );
+}
+
 setupInput({ onDirection: handleDirection, onEnter: handleEnter, onPause: handlePause });
-onImagesLoaded(draw);
-draw();
+startDecorations();
+requestAnimationFrame(animate);
 connectCloud();

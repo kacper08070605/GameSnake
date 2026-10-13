@@ -1,4 +1,6 @@
-// Rysowanie stanu gry na canvas.
+// Rysowanie stanu gry na canvas — wywoływane w każdej klatce animacji (requestAnimationFrame).
+
+import { drawEffects, shakeOffset } from './effects.js';
 
 export const CELL_SIZE = 20;
 
@@ -30,37 +32,67 @@ function isLoaded(image) {
   return image.complete && image.naturalWidth > 0;
 }
 
-/** Wywołuje callback po wczytaniu każdej grafiki — żeby przerysować klatkę. */
-export function onImagesLoaded(callback) {
-  for (const image of Object.values(IMAGES)) {
-    image.addEventListener('load', callback);
+// SVG rysowane w każdej klatce byłoby drogie — rasteryzujemy je raz do zwykłego canvasu.
+const rasterCache = new Map();
+
+function raster(image, width, height) {
+  if (!isLoaded(image)) return null;
+  const key = `${image.src}@${width}x${height}`;
+  if (!rasterCache.has(key)) {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    canvas.getContext('2d').drawImage(image, 0, 0, width, height);
+    rasterCache.set(key, canvas);
   }
+  return rasterCache.get(key);
 }
+
+const FOOD_POP_MS = 250;
 
 /**
  * Rysuje całą klatkę gry.
  * @param {CanvasRenderingContext2D} ctx
  * @param {object} state stan z game.js
- * @param {{ highScore: number, isNewRecord: boolean }} info
+ * @param {{
+ *   highScore: number, isNewRecord: boolean,
+ *   now: number,              // czas klatki (performance.now)
+ *   effects: object[],        // efekty z effects.js
+ *   foodAppearedAt: number,   // kiedy pojawił się obecny owoc (do animacji „pop”)
+ *   motion: boolean,          // false = użytkownik prosi o ograniczenie ruchu
+ * }} info
  */
-export function render(ctx, state, { highScore, isNewRecord }) {
+export function render(ctx, state, { highScore, isNewRecord, now, effects, foodAppearedAt, motion }) {
+  const { width, height } = ctx.canvas;
+  ctx.fillStyle = COLORS.background;
+  ctx.fillRect(0, 0, width, height);
+
+  // Trzęsienie przesuwa całą planszę (tło, owoc, wąż) o kilka pikseli.
+  const shake = motion ? shakeOffset(effects, now) : { x: 0, y: 0 };
+  ctx.save();
+  ctx.translate(shake.x, shake.y);
   drawBoard(ctx, state.width, state.height);
-  if (state.food) drawFood(ctx, state.food);
+  if (state.food) drawFood(ctx, state.food, now, foodAppearedAt, motion);
   drawSnake(ctx, state.snake);
+  ctx.restore();
+
+  // Pulsowanie napisów i kołysanie ilustracji — wolne, żeby nie rozpraszały.
+  const pulse = motion ? 0.75 + 0.25 * Math.sin(now / 450) : 1;
+  const sway = motion ? Math.sin(now / 900) * 3 : 0;
 
   if (state.status === 'start') {
     drawOverlay(
       ctx,
       [
-        { text: 'Naciśnij strzałkę, aby zacząć', size: 20 },
+        { text: 'Naciśnij strzałkę, aby zacząć', size: 20, alpha: pulse },
         { text: `Rekord: ${highScore}`, size: 16 },
         { text: 'Spacja — pauza w trakcie gry', size: 14 },
       ],
-      IMAGES.start,
+      { image: IMAGES.start, offsetY: sway },
     );
   } else if (state.status === 'paused') {
     drawOverlay(ctx, [
-      { text: 'Pauza', size: 32 },
+      { text: 'Pauza', size: 32, alpha: pulse },
       { text: `Wynik: ${state.score}`, size: 18 },
       { text: 'Spacja — wznów', size: 16 },
       { text: 'Enter — nowa gra', size: 16 },
@@ -75,14 +107,16 @@ export function render(ctx, state, { highScore, isNewRecord }) {
     lines.push({ text: 'Enter — zagraj ponownie', size: 16 });
     drawOverlay(ctx, lines);
   }
+
+  // Efekty na wierzchu — także nad nakładką (np. złote iskry nowego rekordu).
+  drawEffects(ctx, effects, now);
 }
 
 function drawBoard(ctx, width, height) {
   ctx.fillStyle = COLORS.background;
   ctx.fillRect(0, 0, width * CELL_SIZE, height * CELL_SIZE);
-  if (isLoaded(IMAGES.board)) {
-    ctx.drawImage(IMAGES.board, 0, 0, width * CELL_SIZE, height * CELL_SIZE);
-  }
+  const board = raster(IMAGES.board, width * CELL_SIZE, height * CELL_SIZE);
+  if (board) ctx.drawImage(board, 0, 0);
 
   // Delikatna siatka pól.
   ctx.strokeStyle = COLORS.grid;
@@ -107,23 +141,33 @@ function drawSnake(ctx, snake) {
   }
 }
 
-function drawFood(ctx, food) {
-  if (isLoaded(IMAGES.food)) {
-    ctx.drawImage(IMAGES.food, food.x * CELL_SIZE, food.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+// Owoc lekko pulsuje, a nowy pojawia się z krótkim „pop” (rośnie od zera z małym przeskokiem).
+function drawFood(ctx, food, now, appearedAt, motion) {
+  let scale = 1;
+  if (motion) {
+    const popProgress = Math.min(1, Math.max(0, (now - appearedAt) / FOOD_POP_MS));
+    scale = easeOutBack(popProgress) * (1 + 0.07 * Math.sin(now / 260));
+  }
+
+  const centerX = food.x * CELL_SIZE + CELL_SIZE / 2;
+  const centerY = food.y * CELL_SIZE + CELL_SIZE / 2;
+  const size = CELL_SIZE * scale;
+  const image = raster(IMAGES.food, 64, 64);
+  if (image) {
+    ctx.drawImage(image, centerX - size / 2, centerY - size / 2, size, size);
     return;
   }
 
-  const radius = CELL_SIZE / 2 - 2;
   ctx.fillStyle = COLORS.food;
   ctx.beginPath();
-  ctx.arc(
-    food.x * CELL_SIZE + CELL_SIZE / 2,
-    food.y * CELL_SIZE + CELL_SIZE / 2,
-    radius,
-    0,
-    Math.PI * 2,
-  );
+  ctx.arc(centerX, centerY, Math.max(0, (CELL_SIZE / 2 - 2) * scale), 0, Math.PI * 2);
   ctx.fill();
+}
+
+// 0 → 1 z lekkim przekroczeniem jedynki pod koniec (efekt sprężynki).
+function easeOutBack(t) {
+  const overshoot = 1.7;
+  return 1 + (overshoot + 1) * (t - 1) ** 3 + overshoot * (t - 1) ** 2;
 }
 
 function drawCell(ctx, { x, y }) {
@@ -135,9 +179,8 @@ function drawOverlay(ctx, lines, illustration) {
   const { width, height } = ctx.canvas;
   ctx.fillStyle = COLORS.overlay;
   ctx.fillRect(0, 0, width, height);
-  if (illustration && isLoaded(illustration)) {
-    ctx.drawImage(illustration, 0, 0, width, height);
-  }
+  const picture = illustration && raster(illustration.image, width, height);
+  if (picture) ctx.drawImage(picture, 0, illustration.offsetY);
 
   const lineGap = 14;
   const totalHeight = lines.reduce((sum, line) => sum + line.size + lineGap, -lineGap);
@@ -146,9 +189,11 @@ function drawOverlay(ctx, lines, illustration) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
   for (const line of lines) {
+    ctx.globalAlpha = line.alpha ?? 1;
     ctx.fillStyle = line.color ?? COLORS.text;
     ctx.font = `bold ${line.size}px system-ui, sans-serif`;
     ctx.fillText(line.text, width / 2, y);
     y += line.size + lineGap;
   }
+  ctx.globalAlpha = 1;
 }

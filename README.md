@@ -17,6 +17,10 @@ Projekt szkoleniowy — pełne wymagania w [wymagania.md](wymagania.md).
 Wąż przechodzi przez ściany na drugą stronę planszy. Gra kończy się, gdy głowa wjedzie we własne ciało.
 Co 5 zjedzonych owoców wąż przyspiesza. Rekord zapisywany jest w przeglądarce (`localStorage`).
 
+Animacje: świetliki nad tłem, „oddychające” logo, pulsujące jabłko, iskry i „+1” po zjedzeniu,
+błysk planszy przy przyspieszeniu, trzęsienie przy przegranej i złote iskry nowego rekordu. Przy włączonym
+w systemie „ogranicz ruch” (`prefers-reduced-motion`) ozdobne animacje są wyłączone.
+
 Wyniki trafiają do publicznej tabeli 10 najlepszych (Supabase). Przerwaną grę (Spacja / Esc albo
 zamknięcie karty) można wznowić po powrocie w tej samej przeglądarce. Bez połączenia z bazą gra działa
 normalnie, tylko bez tabeli i wznawiania.
@@ -50,7 +54,9 @@ index.html              strona: canvas, pasek wyniku, tabela najlepszych, formul
 style.css               wygląd strony
 src/game.js             czysta logika gry (bez DOM, canvas, localStorage i Math.random)
 src/leaderboard.js      reguły tabeli wyników (kto wchodzi do top 10, poprawny nick)
-src/render.js           rysowanie stanu gry na canvas
+src/render.js           rysowanie stanu gry na canvas (w każdej klatce animacji)
+src/effects.js          efekty na planszy: iskry, „+1”, błyski, trzęsienie
+src/fireflies.js        animowane świetliki nad tłem strony
 src/input.js            obsługa klawiatury
 src/storage.js          odczyt/zapis rekordu i nicku
 src/config.js           adres i klucz publiczny projektu Supabase
@@ -61,6 +67,7 @@ src/main.js             pętla gry, stany, timer, przepływ zapisu i wyników
 tests/game.test.js        testy logiki gry (node:test)
 tests/leaderboard.test.js testy reguł tabeli wyników
 tests/account.test.js     testy reguł kont
+tests/effects.test.js     testy logiki efektów
 supabase/schema.sql     tabele i reguły dostępu (Row Level Security) w bazie
 assets/                 grafiki SVG: logo, tło strony i planszy, jabłko, ilustracja startowa
 ```
