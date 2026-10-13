@@ -96,12 +96,23 @@ canvas {
   cursor: pointer;
 }
 
-.leaderboard {
-  width: 200px;
+.sidebar {
+  width: 220px;
   margin-top: 34px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.leaderboard h2 {
+/* Panele na tle z liśćmi — ciemne tło dla czytelności. */
+.panel {
+  padding: 10px 14px;
+  background: rgba(11, 13, 16, 0.8);
+  border: 1px solid #1d3a24;
+  border-radius: 6px;
+}
+
+.panel h2 {
   margin: 0 0 8px;
   font-size: 1.2rem;
   color: #6ee06e;
@@ -117,10 +128,69 @@ canvas {
   overflow-wrap: anywhere;
 }
 
-.cloud-status {
+.cloud-status,
+.account-message {
   margin: 8px 0 0;
   font-size: 0.85rem;
   color: #9aa0a6;
+}
+
+.account-message:empty,
+.cloud-status:empty {
+  display: none;
+}
+
+.account-form[hidden],
+.account-profile[hidden] {
+  display: none;
+}
+
+.account-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.account-hint,
+.account-profile p {
+  margin: 0 0 6px;
+  color: #c8ccd0;
+}
+
+.account-form input {
+  padding: 6px 8px;
+  font: inherit;
+  color: #e8eaed;
+  background: #111418;
+  border: 1px solid #2e9d3a;
+  border-radius: 4px;
+}
+
+.account-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.panel button {
+  flex: 1;
+  padding: 6px 10px;
+  font: inherit;
+  color: #0b0d10;
+  background: #6ee06e;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.panel button.secondary {
+  color: #6ee06e;
+  background: transparent;
+  border: 1px solid #2e9d3a;
+}
+
+.panel button:disabled {
+  opacity: 0.5;
+  cursor: wait;
 }
 
 @media (max-width: 700px) {
@@ -129,16 +199,8 @@ canvas {
     align-items: center;
   }
 
-  .leaderboard {
+  .sidebar {
     width: 400px;
     margin-top: 0;
   }
-}
-
-/* Tabela na tle z liśćmi — ciemny panel dla czytelności. */
-.leaderboard {
-  padding: 10px 14px;
-  background: rgba(11, 13, 16, 0.8);
-  border: 1px solid #1d3a24;
-  border-radius: 6px;
 }

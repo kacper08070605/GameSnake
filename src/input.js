@@ -13,8 +13,11 @@ const KEY_TO_DIRECTION = {
  */
 export function setupInput({ onDirection, onEnter, onPause }) {
   window.addEventListener('keydown', (event) => {
-    // Pisanie nicku w formularzu nie steruje grą.
-    if (event.target instanceof Element && event.target.closest('form')) return;
+    // Pisanie w polach (nick, login, hasło) nie steruje grą.
+    if (event.target instanceof HTMLInputElement) return;
+    // Enter i spacja na przycisku go „klikają” — nie mogą przy okazji pauzować ani zaczynać gry.
+    // Strzałki działają dalej, więc po kliknięciu przycisku można od razu grać.
+    if (event.target instanceof HTMLButtonElement && (event.key === 'Enter' || event.key === ' ')) return;
 
     const direction = KEY_TO_DIRECTION[event.key];
     if (direction) {

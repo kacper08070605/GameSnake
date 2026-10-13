@@ -22,8 +22,12 @@ publikacja na GitHub Pages.
 **W zakresie (wersja 2):** pauza, zapis przerwanej gry w Supabase i jej wznawianie,
 publiczna tabela 10 najlepszych wyników (gracze anonimowi, nick podawany przy wejściu do top 10).
 
+**W zakresie (wersja 3):** konta graczy — login + hasło, profil (login, najlepszy wynik, liczba gier),
+zapis gry i wyniki przypięte do konta (dostępne w każdej przeglądarce). Gra bez logowania dalej możliwa;
+rejestracja zamienia gościa w konto z zachowaniem jego zapisu i wyników.
+
 **Poza zakresem:** dźwięki, sterowanie dotykowe / wersja mobilna, poziomy trudności,
-przeszkody na planszy, konta użytkowników, ochrona tabeli przed celowo sfałszowanymi wynikami.
+przeszkody na planszy, reset zapomnianego hasła, ochrona tabeli przed celowo sfałszowanymi wynikami.
 
 ## 3. Zasady gry
 

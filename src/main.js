@@ -15,12 +15,24 @@ import { setupInput } from './input.js';
 import { loadHighScore, saveHighScore, loadNickname, saveNickname } from './storage.js';
 import { qualifiesForTop, cleanNickname } from './leaderboard.js';
 import {
+  normalizeUsername,
+  validateUsername,
+  validatePassword,
+  describeAuthError,
+} from './account.js';
+import { setupAccountPanel } from './account-panel.js';
+import {
   initCloud,
   loadSavedGame,
   saveGame,
   deleteSavedGame,
   submitScore,
   fetchTopScores,
+  register,
+  logIn,
+  logOut,
+  fetchAccount,
+  waitForSavedGames,
 } from './cloud.js';
 
 const BOARD_SIZE = 20;
@@ -40,6 +52,10 @@ let isNewRecord = false;
 let timerId = null;
 let cloudReady = false;
 let pendingScore = null; // wynik czekający na wpisanie nicku
+let account = null; // { username, bestScore, gamesPlayed } zalogowanego gracza; null = gość
+let finalScoreTask = Promise.resolve(); // trwająca obsługa wyniku ostatniej gry
+// Rośnie przy każdej zmianie gracza; odpowiedzi z bazy zamówione wcześniej są wtedy ignorowane.
+let userGeneration = 0;
 
 function newGameState() {
   return createGame({ width: BOARD_SIZE, height: BOARD_SIZE, random: Math.random });
@@ -80,12 +96,19 @@ function finishGame() {
 
   if (cloudReady) {
     deleteSavedGame();
-    if (state.score > 0) handleFinalScore(state.score);
+    // Wysyłamy także wynik 0 — liczy się do rozegranych gier w profilu.
+    finalScoreTask = handleFinalScore(state.score);
   }
 }
 
-// Wynik z top 10 czeka na nick; pozostałe wysyłamy od razu z zapamiętanym nickiem.
+// Zalogowany: wynik od razu pod loginem. Gość: wynik z top 10 czeka na nick,
+// pozostałe wysyłamy od razu z zapamiętanym nickiem.
 async function handleFinalScore(score) {
+  if (account) {
+    await sendScore(account.username, score);
+    return;
+  }
+
   const topScores = await fetchTopScores();
 
   // Gracz mógł już zacząć nową grę, zanim przyszła odpowiedź — wtedy nie pytamy o nick.
@@ -116,7 +139,7 @@ async function sendScore(nickname, score) {
     showCloudError('Nie udało się zapisać wyniku w tabeli.');
     return;
   }
-  await refreshLeaderboard();
+  await Promise.all([refreshLeaderboard(), account ? refreshAccount() : null]);
 }
 
 // Komunikat pod tabelą; pusty tekst = wszystko w porządku.
@@ -142,15 +165,16 @@ async function refreshLeaderboard() {
   topScoresElement.replaceChildren(...items);
 }
 
+// Zwraca obietnicę zapisu, żeby przed zmianą konta można było poczekać, aż gra się zapisze.
 function pause() {
   stopTimer();
   state = pauseGame(state);
-  if (cloudReady) {
-    saveGame(serializeGame(state)).then((saved) => {
-      if (!saved) showCloudError('Nie udało się zapisać gry — wznowienie po odświeżeniu nie będzie możliwe.');
-    });
-  }
   draw();
+  if (!cloudReady) return Promise.resolve();
+
+  return saveGame(serializeGame(state)).then((saved) => {
+    if (!saved) showCloudError('Nie udało się zapisać gry — wznowienie po odświeżeniu nie będzie możliwe.');
+  });
 }
 
 function resume() {
@@ -207,16 +231,111 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden && state.status === 'playing') pause();
 });
 
-async function connectCloud() {
-  cloudStatusElement.textContent = 'Łączenie z bazą…';
-  cloudReady = await initCloud();
-  if (!cloudReady) {
-    cloudStatusElement.textContent = 'Brak połączenia z bazą — wyniki i wznawianie gry niedostępne.';
-    return;
-  }
+// ---------- Konto ----------
 
-  showCloudError('');
-  const [saved] = await Promise.all([loadSavedGame(), refreshLeaderboard()]);
+const accountPanel = setupAccountPanel({
+  onLogIn: handleLogIn,
+  onRegister: handleRegister,
+  onLogOut: handleLogOut,
+});
+
+async function refreshAccount() {
+  const generation = userGeneration;
+  const fetched = await fetchAccount();
+  if (generation !== userGeneration) return; // w międzyczasie zmienił się gracz
+
+  account = fetched;
+  if (account) {
+    accountPanel.showAccount(account);
+  } else {
+    accountPanel.showGuest();
+  }
+}
+
+// Zwraca poprawny login albo null (wtedy komunikat jest już w panelu).
+function readCredentials(rawUsername, password) {
+  const username = normalizeUsername(rawUsername);
+  const problem = validateUsername(username) ?? validatePassword(password);
+  if (problem) {
+    accountPanel.showError(problem);
+    return null;
+  }
+  return username;
+}
+
+// Rejestracja zamienia gościa w konto z tym samym ID — gra toczy się dalej bez przerwy.
+async function handleRegister(rawUsername, password) {
+  const username = readCredentials(rawUsername, password);
+  if (!username) return;
+
+  accountPanel.setBusy(true);
+  try {
+    const { ok, error } = await register(username, password);
+    // Panel odświeżamy także po błędzie — rejestracja mogła przejść w połowie (konto bez profilu).
+    await refreshAccount();
+    if (!ok) accountPanel.showError(describeAuthError(error));
+  } finally {
+    accountPanel.setBusy(false);
+  }
+}
+
+async function handleLogIn(rawUsername, password) {
+  const username = readCredentials(rawUsername, password);
+  if (!username) return;
+
+  accountPanel.setBusy(true);
+  try {
+    await leaveCurrentUser();
+    const { ok, error } = await logIn(username, password);
+    if (!ok) {
+      accountPanel.showError(describeAuthError(error));
+      return;
+    }
+    await startAsNewUser();
+  } finally {
+    accountPanel.setBusy(false);
+  }
+}
+
+async function handleLogOut() {
+  accountPanel.setBusy(true);
+  try {
+    await leaveCurrentUser();
+    const ok = await logOut();
+    // Także po błędzie: sesja konta mogła już zostać zamknięta, więc gra startuje od nowa.
+    await startAsNewUser();
+    if (!ok) accountPanel.showError('Nie udało się wylogować — spróbuj ponownie.');
+  } finally {
+    accountPanel.setBusy(false);
+  }
+}
+
+// Przed zmianą konta: trwająca gra zapisuje się (pauza), a porzucony wynik trafia do tabeli —
+// oba jeszcze jako dotychczasowy gracz.
+async function leaveCurrentUser() {
+  if (state.status === 'playing') await pause();
+  await finalScoreTask; // wynik gry zakończonej przed chwilą (może otworzyć formularz nicku)
+  if (pendingScore !== null) await submitPendingScore(cleanNickname(loadNickname()));
+  await waitForSavedGames();
+  userGeneration += 1;
+}
+
+// Po zmianie konta: czysta plansza, potem zapis, tabela i profil nowego gracza.
+async function startAsNewUser() {
+  stopTimer();
+  nicknameForm.hidden = true;
+  isNewRecord = false;
+  state = newGameState();
+  draw();
+  await loadUserData();
+}
+
+// ---------- Start ----------
+
+async function loadUserData() {
+  const generation = userGeneration;
+  const [saved] = await Promise.all([loadSavedGame(), refreshLeaderboard(), refreshAccount()]);
+  if (generation !== userGeneration) return; // zapis innego gracza — nie odtwarzamy
   const restored = saved && restoreGame(saved, { width: BOARD_SIZE, height: BOARD_SIZE, random: Math.random });
 
   // Zapis odtwarzamy tylko, jeśli gracz w międzyczasie nie zaczął nowej gry.
@@ -224,6 +343,19 @@ async function connectCloud() {
     state = restored;
     draw();
   }
+}
+
+async function connectCloud() {
+  cloudStatusElement.textContent = 'Łączenie z bazą…';
+  cloudReady = await initCloud();
+  if (!cloudReady) {
+    cloudStatusElement.textContent = 'Brak połączenia z bazą — wyniki i wznawianie gry niedostępne.';
+    accountPanel.showUnavailable();
+    return;
+  }
+
+  showCloudError('');
+  await loadUserData();
 }
 
 setupInput({ onDirection: handleDirection, onEnter: handleEnter, onPause: handlePause });

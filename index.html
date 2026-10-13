@@ -22,10 +22,33 @@
           <button type="submit">Zapisz</button>
         </form>
       </div>
-      <aside class="leaderboard">
-        <h2>Najlepsi</h2>
-        <ol id="top-scores"></ol>
-        <p id="cloud-status" class="cloud-status"></p>
+      <aside class="sidebar">
+        <section id="account" class="panel account">
+          <h2>Konto</h2>
+          <form id="account-form" class="account-form" hidden>
+            <p class="account-hint">Grasz jako gość.</p>
+            <input id="account-username" name="username" placeholder="login" maxlength="16"
+                   autocomplete="username" autocapitalize="none" spellcheck="false">
+            <input id="account-password" name="password" type="password" placeholder="hasło"
+                   autocomplete="current-password">
+            <div class="account-buttons">
+              <button type="submit">Zaloguj</button>
+              <button type="button" id="account-register" class="secondary">Załóż konto</button>
+            </div>
+          </form>
+          <div id="account-profile" class="account-profile" hidden>
+            <p>Zalogowany: <strong id="account-name"></strong></p>
+            <p>Najlepszy wynik: <strong id="account-best">0</strong></p>
+            <p>Rozegrane gry: <strong id="account-games">0</strong></p>
+            <button type="button" id="account-logout" class="secondary">Wyloguj</button>
+          </div>
+          <p id="account-message" class="account-message"></p>
+        </section>
+        <section class="panel leaderboard">
+          <h2>Najlepsi</h2>
+          <ol id="top-scores"></ol>
+          <p id="cloud-status" class="cloud-status"></p>
+        </section>
       </aside>
     </div>
   </main>

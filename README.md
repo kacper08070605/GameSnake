@@ -21,6 +21,11 @@ Wyniki trafiają do publicznej tabeli 10 najlepszych (Supabase). Przerwaną grę
 zamknięcie karty) można wznowić po powrocie w tej samej przeglądarce. Bez połączenia z bazą gra działa
 normalnie, tylko bez tabeli i wznawiania.
 
+**Konto (opcjonalne):** w panelu „Konto” można założyć konto (login: 3–16 znaków — małe litery, cyfry, `_`;
+hasło: min. 6 znaków) i logować się nim w dowolnej przeglądarce. Założenie konta zachowuje dotychczasowy zapis
+i wyniki gościa. Profil pokazuje najlepszy wynik i liczbę rozegranych gier, a wyniki w tabeli są podpisane loginem.
+Uwaga: nie ma resetu zapomnianego hasła (konta nie mają prawdziwego e-maila).
+
 ## Uruchomienie lokalnie
 
 Moduły ES nie działają z pliku otwartego dwuklikiem (`file://`), potrzebny jest prosty serwer:
@@ -49,10 +54,13 @@ src/render.js           rysowanie stanu gry na canvas
 src/input.js            obsługa klawiatury
 src/storage.js          odczyt/zapis rekordu i nicku
 src/config.js           adres i klucz publiczny projektu Supabase
-src/cloud.js            komunikacja z Supabase (logowanie anonimowe, zapis gry, wyniki)
+src/cloud.js            komunikacja z Supabase (konta, zapis gry, wyniki)
+src/account.js          reguły kont (login, hasło, komunikaty błędów)
+src/account-panel.js    panel „Konto” na stronie
 src/main.js             pętla gry, stany, timer, przepływ zapisu i wyników
 tests/game.test.js        testy logiki gry (node:test)
 tests/leaderboard.test.js testy reguł tabeli wyników
+tests/account.test.js     testy reguł kont
 supabase/schema.sql     tabele i reguły dostępu (Row Level Security) w bazie
 assets/                 grafiki SVG: logo, tło strony i planszy, jabłko, ilustracja startowa
 ```
